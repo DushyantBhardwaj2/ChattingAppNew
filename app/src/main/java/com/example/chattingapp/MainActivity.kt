@@ -7,6 +7,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
@@ -17,7 +21,6 @@ import com.example.chattingapp.Screens.LoginScreen
 import com.example.chattingapp.Screens.Profile
 import com.example.chattingapp.Screens.SignUpScreen
 import com.example.chattingapp.Screens.SingleChatScreen
-
 import com.example.chattingapp.ui.theme.ChattingAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -40,16 +43,23 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ChattingAppTheme {
+            var isDarkTheme by rememberSaveable { mutableStateOf(false) }
+            ChattingAppTheme(darkTheme = isDarkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    ChatAppNavigation()
+                    ChatAppNavigation(
+                        isDarkTheme = isDarkTheme,
+                        onThemeChange = { isDarkTheme = it }
+                    )
                 }
             }
         }
     }
 
     @Composable
-    fun ChatAppNavigation() {
+    fun ChatAppNavigation(
+        isDarkTheme: Boolean,
+        onThemeChange: (Boolean) -> Unit
+    ) {
         val navController = rememberNavController()
         val vm = hiltViewModel<LCViewModel>()
         NavHost(navController = navController, startDestination = DestinationScreen.SignUp.route) {
@@ -80,13 +90,10 @@ class MainActivity : ComponentActivity() {
             composable(
                 DestinationScreen.Profile.route
             ) {
-
-                Profile(navController,vm)
+                Profile(navController, vm, isDarkTheme, onThemeChange)
             }
 
         }
 
     }
 }
-
-

@@ -43,7 +43,12 @@ import com.example.chattingapp.commonProgressBar
 import com.example.chattingapp.navigateTO
 
 @Composable
-fun Profile(navController: NavController, vm: LCViewModel) {
+fun Profile(
+    navController: NavController,
+    vm: LCViewModel,
+    isDarkTheme: Boolean,
+    onThemeChange: (Boolean) -> Unit
+) {
     val inProgress = vm.inProcess.value
     if (inProgress) {
         commonProgressBar()
@@ -76,7 +81,9 @@ fun Profile(navController: NavController, vm: LCViewModel) {
                 onLogout = {
                     vm.logout()
                     navigateTO(navController = navController, route = DestinationScreen.Login.route)
-                }
+                },
+                isDarkTheme = isDarkTheme,
+                onThemeChange = onThemeChange
             )
         }
         BottomNavigationMenu(
@@ -96,7 +103,9 @@ fun ProfileContent(
     onNumberChange: (String) -> Unit,
     onBack: () -> Unit,
     onSave: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    isDarkTheme: Boolean,
+    onThemeChange: (Boolean) -> Unit
 ) {
     Column(
         modifier = Modifier.padding(top = 40.dp)
@@ -150,6 +159,18 @@ fun ProfileContent(
                     unfocusedContainerColor = Color.Transparent,
                     disabledContainerColor = Color.Transparent
                 )
+            )
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = "Dark Mode")
+            androidx.compose.material3.Switch(
+                checked = isDarkTheme,
+                onCheckedChange = { onThemeChange(it) }
             )
         }
         commonDivider()

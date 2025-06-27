@@ -1,25 +1,28 @@
 package com.example.chattingapp
 
-import com.google.firebase.Firebase
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.auth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.firestore
-import com.google.firebase.storage.FirebaseStorage
-import com.google.firebase.storage.storage
+import android.app.Application
+import com.google.firebase.FirebaseApp
 import dagger.Module
-import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.components.ViewModelComponent
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+import dagger.Provides
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 
 @Module
-@InstallIn(ViewModelComponent::class)
-class HiltModule {
+@InstallIn(SingletonComponent::class)
+object HiltModule {
     @Provides
-    fun provideAuthentication(): FirebaseAuth= Firebase.auth
-    @Provides
-    fun provideFirestore(): FirebaseFirestore=Firebase.firestore
-    @Provides
-    fun provideStorage(): FirebaseStorage=Firebase.storage
+    @Singleton
+    fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
 
+    @Provides
+    @Singleton
+    fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
+
+    @Provides
+    @Singleton
+    fun provideFirebaseStorage(): FirebaseStorage = FirebaseStorage.getInstance()
 }

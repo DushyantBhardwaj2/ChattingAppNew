@@ -1,5 +1,8 @@
 package com.example.chattingapp.Screens
 
+import android.os.Bundle
+import android.util.Log
+
 import android.text.Highlights
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -27,7 +30,6 @@ import androidx.navigation.NavController
 import com.example.chattingapp.DestinationScreen
 import com.example.chattingapp.R
 import com.example.chattingapp.navigateTO
-import com.google.firebase.annotations.concurrent.Background
 
 enum class BottomNavigationItem(val icon: Int, val navDestination: DestinationScreen) {
     CHATLIST(R.drawable.chatnavigationicon, DestinationScreen.ChatList),
