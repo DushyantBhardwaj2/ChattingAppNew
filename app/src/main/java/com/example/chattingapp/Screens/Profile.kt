@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -48,8 +49,10 @@ import com.example.chattingapp.CommonImage
 import com.example.chattingapp.DestinationScreen
 import com.example.chattingapp.LCViewModel
 import com.example.chattingapp.commonDivider
+import com.example.chattingapp.ui.theme.ChatTheme
 import com.example.chattingapp.commonProgressBar
 import com.example.chattingapp.navigateTO
+import com.example.chattingapp.navigateToAuthScreen
 
 @Composable
 fun Profile(
@@ -65,7 +68,11 @@ fun Profile(
         val userData = vm.userData.value
         var name by rememberSaveable { mutableStateOf(userData?.name ?: "") }
         var number by rememberSaveable { mutableStateOf(userData?.number ?: "") }
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -74,12 +81,12 @@ fun Profile(
             ) {
                 Text(text = "Back", Modifier.clickable {
                     navigateTO(navController, route = DestinationScreen.ChatList.route)
-                }, color = Color.Blue, fontWeight = FontWeight.Bold)
+                }, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 Text(text = "Save", Modifier.clickable {
                     vm.createOrUpdateProfile(name = name, number = number)
                     // Update the local userData state after saving
                     vm.userData.value = vm.userData.value?.copy(name = name, number = number)
-                }, color = Color.Blue, fontWeight = FontWeight.Bold)
+                }, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
             commonDivider()
             ProfileImage(profileIcon = userData?.profileIcon ?: 0, vm = vm, name = name)
@@ -124,7 +131,7 @@ fun Profile(
                     text = "Logout",
                     Modifier.clickable {
                         vm.logout()
-                        navigateTO(navController = navController, route = DestinationScreen.Login.route)
+                        navigateToAuthScreen(navController = navController, route = DestinationScreen.Login.route)
                     },
                     color = Color.Red,
                     fontWeight = FontWeight.Bold

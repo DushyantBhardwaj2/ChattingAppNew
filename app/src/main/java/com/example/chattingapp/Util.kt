@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,13 +33,40 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.chattingapp.ui.theme.ChatTheme
 import coil3.compose.rememberAsyncImagePainter
 import androidx.compose.ui.platform.LocalContext
 
+// Standard navigation - preserves back stack
 fun navigateTO(navController: NavController, route: String) {
     navController.navigate(route) {
-        popUpTo(route)
         launchSingleTop = true
+        // Allow back navigation by not clearing the stack
+    }
+}
+
+// Navigation for authentication flow - clears auth screens from back stack
+fun navigateAndClearAuthStack(navController: NavController, route: String) {
+    navController.navigate(route) {
+        popUpTo(DestinationScreen.SignUp.route) { inclusive = true }
+        popUpTo(DestinationScreen.Login.route) { inclusive = true }
+        launchSingleTop = true
+    }
+}
+
+// Navigation for logout - clears everything and goes to signup
+fun navigateToAuthScreen(navController: NavController, route: String) {
+    navController.navigate(route) {
+        popUpTo(0) { inclusive = true }
+        launchSingleTop = true
+    }
+}
+
+// Navigate to chat with proper back navigation
+fun navigateToChat(navController: NavController, chatId: String) {
+    navController.navigate(DestinationScreen.SingleChat.createRoute(chatId)) {
+        launchSingleTop = true
+        // Preserve back stack so user can return to chat list
     }
 }
 
@@ -47,13 +75,15 @@ fun commonProgressBar() {
     Row(
         modifier = Modifier
             .alpha(0.5f)
-            .background(Color.LightGray)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(enabled = false) {}
             .fillMaxSize(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
-        CircularProgressIndicator()
+        CircularProgressIndicator(
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 }
 
@@ -61,10 +91,9 @@ fun commonProgressBar() {
 fun commonDivider() {
     HorizontalDivider(
         modifier = Modifier
-            .alpha(2f)
-            ,
+            .alpha(0.8f),
         thickness = 1.dp,
-        color = Color.Black
+        color = MaterialTheme.colorScheme.outline
     )
 }
 
@@ -74,10 +103,7 @@ fun CheckSignedIn(vm: LCViewModel, navController: NavController) {
     val signIn = vm.signIn.value
     if (signIn && !alreadySignIn.value) {
         alreadySignIn.value = true
-        navController.navigate(DestinationScreen.ChatList.route) {
-            popUpTo(0)
-        }
-
+        navigateAndClearAuthStack(navController, DestinationScreen.ChatList.route)
     }
 }
 
@@ -102,7 +128,8 @@ fun Titletext(text: String) {
         fontWeight = FontWeight.Bold,
         fontSize = 35.sp,
         modifier = Modifier.padding(10.dp),
-        textDecoration = TextDecoration.Underline, color = Color.Black
+        textDecoration = TextDecoration.Underline,
+        color = MaterialTheme.colorScheme.onBackground
     )
 }
 
@@ -145,7 +172,7 @@ fun ProfileIcon(
         contentDescription = "Profile Icon",
         modifier = modifier
             .clip(CircleShape)
-            .background(Color.Gray.copy(alpha = 0.3f))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     )
 }
 

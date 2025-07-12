@@ -167,6 +167,8 @@ class LCViewModel @Inject constructor(
                             .addOnSuccessListener {
                                 inProcess.value = false
                                 getUserData(uid)
+                                // Refresh chats to show updated profile info
+                                populateChats()
                             }
                             .addOnFailureListener { exception ->
                                 handleException(exception, "Failed to update user data")
@@ -178,6 +180,8 @@ class LCViewModel @Inject constructor(
                             .addOnSuccessListener {
                                 inProcess.value = false
                                 getUserData(uid)
+                                // Refresh chats to show updated profile info
+                                populateChats()
                             }
                             .addOnFailureListener { exception ->
                                 handleException(exception, "Failed to create user data")
@@ -244,6 +248,14 @@ class LCViewModel @Inject constructor(
                     Log.d("PopulateChats", "Found ${value.documents.size} chat documents")
                     
                     val chatList = mutableListOf<ChatData>()
+                    var documentsProcessed = 0
+                    val totalDocuments = value.documents.size
+                    
+                    if (totalDocuments == 0) {
+                        chats.value = listOf()
+                        inProcessChats.value = false
+                        return@addSnapshotListener
+                    }
                     
                     value.documents.forEach { doc ->
                         try {
@@ -251,51 +263,80 @@ class LCViewModel @Inject constructor(
                             val otherUserId = users.firstOrNull { it != currentUserId }
                             
                             if (otherUserId != null) {
-                                // Get the stored user data from the document
-                                val user1Data = doc.get("user1") as? Map<String, Any>
-                                val user2Data = doc.get("user2") as? Map<String, Any>
-                                
-                                // Determine which user is the other user
-                                val otherUserData = if (user1Data?.get("userID") == otherUserId) user1Data else user2Data
-                                
-                                val otherUser = if (otherUserData != null) {
-                                    UserData(
-                                        userID = otherUserData["userID"] as? String ?: otherUserId,
-                                        name = otherUserData["name"] as? String ?: "Unknown User",
-                                        number = otherUserData["number"] as? String ?: "",
-                                        profileIcon = (otherUserData["profileIcon"] as? Number)?.toInt() 
-                                            ?: com.example.chattingapp.data.ProfileIcons.getDefaultIcon()
-                                    )
-                                } else {
-                                    // Fallback if user data is not found in document
-                                    UserData(
-                                        userID = otherUserId,
-                                        name = "Unknown User",
-                                        number = "",
-                                        profileIcon = com.example.chattingapp.data.ProfileIcons.getDefaultIcon()
-                                    )
+                                // Fetch fresh user data from users collection instead of using stored data
+                                db.collection(USER_NODE).document(otherUserId).get()
+                                    .addOnSuccessListener { userDoc ->
+                                        try {
+                                            val otherUser = if (userDoc.exists()) {
+                                                userDoc.toObject<UserData>() ?: UserData(
+                                                    userID = otherUserId,
+                                                    name = "Unknown User",
+                                                    number = "",
+                                                    profileIcon = com.example.chattingapp.data.ProfileIcons.getDefaultIcon()
+                                                )
+                                            } else {
+                                                UserData(
+                                                    userID = otherUserId,
+                                                    name = "Unknown User",
+                                                    number = "",
+                                                    profileIcon = com.example.chattingapp.data.ProfileIcons.getDefaultIcon()
+                                                )
+                                            }
+                                            
+                                            val chat = ChatData(
+                                                chatId = doc.id,
+                                                user1 = userData.value ?: UserData(userID = currentUserId),
+                                                user2 = otherUser,
+                                                createdAt = doc.getLong("createdAt") ?: 0L
+                                            )
+                                            chatList.add(chat)
+                                            Log.d("PopulateChats", "Added chat with ${otherUser.name} (Chat ID: ${doc.id})")
+                                            
+                                            documentsProcessed++
+                                            if (documentsProcessed == totalDocuments) {
+                                                // All documents processed, update the chats list
+                                                val sortedChats = chatList.sortedByDescending { it.createdAt }
+                                                chats.value = sortedChats
+                                                Log.d("PopulateChats", "Chat population completed. Total chats: ${sortedChats.size}")
+                                                inProcessChats.value = false
+                                            }
+                                        } catch (e: Exception) {
+                                            Log.e("PopulateChats", "Error processing user data for ${doc.id}", e)
+                                            documentsProcessed++
+                                            if (documentsProcessed == totalDocuments) {
+                                                val sortedChats = chatList.sortedByDescending { it.createdAt }
+                                                chats.value = sortedChats
+                                                inProcessChats.value = false
+                                            }
+                                        }
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Log.e("PopulateChats", "Error fetching user data for $otherUserId", e)
+                                        documentsProcessed++
+                                        if (documentsProcessed == totalDocuments) {
+                                            val sortedChats = chatList.sortedByDescending { it.createdAt }
+                                            chats.value = sortedChats
+                                            inProcessChats.value = false
+                                        }
+                                    }
+                            } else {
+                                documentsProcessed++
+                                if (documentsProcessed == totalDocuments) {
+                                    val sortedChats = chatList.sortedByDescending { it.createdAt }
+                                    chats.value = sortedChats
+                                    inProcessChats.value = false
                                 }
-                                
-                                val chat = ChatData(
-                                    chatId = doc.id,
-                                    user1 = userData.value ?: UserData(userID = currentUserId),
-                                    user2 = otherUser,
-                                    createdAt = doc.getLong("createdAt") ?: 0L
-                                )
-                                chatList.add(chat)
-                                Log.d("PopulateChats", "Added chat with ${otherUser.name} (Chat ID: ${doc.id})")
                             }
                         } catch (e: Exception) {
                             Log.e("PopulateChats", "Error processing chat document ${doc.id}", e)
+                            documentsProcessed++
+                            if (documentsProcessed == totalDocuments) {
+                                val sortedChats = chatList.sortedByDescending { it.createdAt }
+                                chats.value = sortedChats
+                                inProcessChats.value = false
+                            }
                         }
                     }
-                    
-                    // Sort by creation time (newest first)
-                    val sortedChats = chatList.sortedByDescending { it.createdAt }
-                    chats.value = sortedChats
-                    
-                    Log.d("PopulateChats", "Chat population completed. Total chats: ${sortedChats.size}")
-                    inProcessChats.value = false
                 }
             }
     }

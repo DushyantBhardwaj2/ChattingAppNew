@@ -45,6 +45,7 @@ import com.example.chattingapp.LCViewModel
 import com.example.chattingapp.Titletext
 import com.example.chattingapp.commonProgressBar
 import com.example.chattingapp.navigateTO
+import com.example.chattingapp.ui.theme.ChatTheme
 
 @Composable
 fun ChatListScreen(navController: NavController, vm: LCViewModel) {
@@ -80,6 +81,7 @@ fun ChatListScreen(navController: NavController, vm: LCViewModel) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
                         .padding(it)
                 ) {
                     Titletext(text = "Chats")
