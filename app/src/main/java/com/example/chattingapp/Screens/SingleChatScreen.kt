@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,7 +71,7 @@ fun SingleChatScreen(navController: NavController, vm: LCViewModel, chatId: Stri
             .fillMaxWidth()
             .fillMaxHeight()
     ) {
-        ChatHeader(name = chatUser.name ?: "", imageUrl = chatUser.imageUrl ?: "") {
+        ChatHeader(name = chatUser.name ?: "", profileIcon = chatUser.profileIcon ?: 0) {
             navController.popBackStack()
             vm.depopulateMessage()
         }
@@ -139,7 +140,7 @@ fun ReplyBox(reply: String, onReplyChange: (String) -> Unit, onSendReply: () -> 
 }
 
 @Composable
-fun ChatHeader(name: String, imageUrl: String, onBackClicked: () -> Unit) {
+fun ChatHeader(name: String, profileIcon: Int, onBackClicked: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -158,7 +159,6 @@ fun ChatHeader(name: String, imageUrl: String, onBackClicked: () -> Unit) {
                     shape = RoundedCornerShape(4.dp)
                 )
         )
-        // Display profile picture or initial letter
         Box(
             modifier = Modifier
                 .padding(8.dp)
@@ -172,21 +172,11 @@ fun ChatHeader(name: String, imageUrl: String, onBackClicked: () -> Unit) {
                 ),
             contentAlignment = Alignment.Center
         ) {
-            if (imageUrl.isNotEmpty()) {
-                // Display profile picture if available
-                CommonImage(
-                    data = imageUrl,
-                    modifier = Modifier.size(50.dp)
-                )
-            } else {
-                // Display initial letter if no profile picture is available
-                Text(
-                    text = name.firstOrNull()?.toString() ?: "",
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            Icon(
+                painter = painterResource(id = profileIcon),
+                contentDescription = null,
+                modifier = Modifier.size(50.dp)
+            )
         }
         Text(
             text = name,

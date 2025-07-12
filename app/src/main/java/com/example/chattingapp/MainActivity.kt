@@ -30,7 +30,7 @@ sealed class DestinationScreen(var route: String) {
     object Login : DestinationScreen("login")
     object Profile : DestinationScreen("profile")
     object ChatList : DestinationScreen("chatlist")
-    object SingleChat : DestinationScreen("SingleChat/{chatId}") {
+    object SingleChat : DestinationScreen("singlechat/{chatId}") {
         fun createRoute(chatID: String?) = "singlechat/$chatID"
     }
 

@@ -36,10 +36,12 @@ import com.example.chattingapp.LCViewModel
 import com.example.chattingapp.R
 import com.example.chattingapp.commonProgressBar
 import com.example.chattingapp.navigateTO
+import com.example.chattingapp.NotificationMessage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(navController: NavController, vm: LCViewModel) {
+    NotificationMessage(vm = vm)
     CheckSignedIn(vm,navController)
     Box(modifier = Modifier.fillMaxSize().padding(top=40.dp)) {
         Column(

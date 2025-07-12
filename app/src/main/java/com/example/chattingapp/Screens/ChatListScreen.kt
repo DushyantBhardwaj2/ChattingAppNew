@@ -105,9 +105,9 @@ fun ChatListScreen(navController: NavController, vm: LCViewModel) {
                                     chat.user1
                                 }
                                 CommonRow(
-                                    imageUrl = chatUser.imageUrl,
-                                    name = chatUser.name?:"",
-                                    onClick = {
+                                    profileIcon = chatUser.profileIcon,
+                                    name = chatUser.name,
+                                    onItemClick = {
                                         chat.chatId?.let {
                                             navigateTO(
                                                 navController,
@@ -170,48 +170,5 @@ fun FAB(
         ) {
             Icon(imageVector = Icons.Rounded.Add, contentDescription = "", tint = Color.White)
         }
-    }
-}
-
-@Composable
-fun CommonRow(
-    imageUrl: String?,
-    name: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Display profile picture or initial letter
-        Box(
-            modifier = Modifier
-                .size(50.dp)
-                .background(Color.Gray, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            if (!imageUrl.isNullOrEmpty()) {
-                // Display profile picture if available
-                CommonImage(data = imageUrl, modifier = Modifier.size(50.dp))
-            } else {
-                // Display initial letter if no profile picture is available
-                Text(
-                    text = name.firstOrNull()?.toString() ?: "",
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-        Text(
-            text = name,
-            modifier = Modifier
-                .padding(start = 8.dp)
-                .weight(1f),
-            fontSize = 18.sp
-        )
     }
 }

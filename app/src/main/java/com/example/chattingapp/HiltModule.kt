@@ -9,7 +9,7 @@ import javax.inject.Singleton
 import dagger.Provides
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
+import com.example.chattingapp.diagnostic.FirebaseDataDiagnostic
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -21,8 +21,10 @@ object HiltModule {
     @Provides
     @Singleton
     fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
-
+    
     @Provides
     @Singleton
-    fun provideFirebaseStorage(): FirebaseStorage = FirebaseStorage.getInstance()
+    fun provideFirebaseDataDiagnostic(
+        firestore: FirebaseFirestore
+    ): FirebaseDataDiagnostic = FirebaseDataDiagnostic(firestore)
 }

@@ -1,7 +1,6 @@
 package com.example.chattingapp
 
-import android.icu.text.CaseMap.Title
-import android.widget.AdapterView.OnItemClickListener
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,10 +14,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -27,15 +26,14 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.fontscaling.FontScaleConverterTable
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import coil3.compose.rememberAsyncImagePainter
+import androidx.compose.ui.platform.LocalContext
 
 fun navigateTO(navController: NavController, route: String) {
     navController.navigate(route) {
@@ -110,7 +108,7 @@ fun Titletext(text: String) {
 
 @Composable
 fun CommonRow(
-    imageUrl: String?,
+    profileIcon: Int,
     name: String?,
     onItemClick: () -> Unit
 ) {
@@ -120,19 +118,46 @@ fun CommonRow(
             .height(75.dp)
             .clickable {
                 onItemClick.invoke()
-
             },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        CommonImage(
-            data = imageUrl,
+        ProfileIcon(
+            iconRes = profileIcon,
             modifier = Modifier
                 .padding(8.dp)
                 .size(50.dp)
-                .clip(CircleShape)
-                .background(Color.Red))
-        Text(text = name ?: "-----",
-            fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp))
+        )
+        Text(
+            text = name ?: "-----",
+            fontWeight = FontWeight.Bold, 
+            modifier = Modifier.padding(start = 4.dp)
+        )
+    }
+}
+
+@Composable
+fun ProfileIcon(
+    iconRes: Int,
+    modifier: Modifier = Modifier
+) {
+    Image(
+        painter = painterResource(id = if (iconRes == 0) com.example.chattingapp.data.ProfileIcons.getDefaultIcon() else iconRes),
+        contentDescription = "Profile Icon",
+        modifier = modifier
+            .clip(CircleShape)
+            .background(Color.Gray.copy(alpha = 0.3f))
+    )
+}
+
+@Composable
+fun NotificationMessage(vm: LCViewModel) {
+    val notifState = vm.eventMutableState.value
+    val notifMessage = notifState?.getContentOrNull()
+    if (notifMessage != null) {
+        val context = LocalContext.current
+        LaunchedEffect(key1 = notifMessage) {
+            Toast.makeText(context, notifMessage, Toast.LENGTH_LONG).show()
+        }
     }
 }
 
