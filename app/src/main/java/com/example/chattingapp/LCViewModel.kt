@@ -6,9 +6,9 @@ import androidx.core.text.isDigitsOnly
 import androidx.lifecycle.ViewModel
 import com.example.chattingapp.data.CHATS
 import com.example.chattingapp.data.ChatData
-import com.example.chattingapp.data.ChatUser
 import com.example.chattingapp.data.Events
 import com.example.chattingapp.data.MESSAGE
+import com.example.chattingapp.data.Message
 import com.example.chattingapp.data.USER_NODE
 import com.example.chattingapp.data.UserData
 import com.google.firebase.auth.FirebaseAuth
@@ -35,7 +35,7 @@ class LCViewModel @Inject constructor(
     val inProgressChatMessage = mutableStateOf(false)
     var currentChatMessageListener: ListenerRegistration? = null
     var currentChatListListener: ListenerRegistration? = null
-    val chatMessages = mutableStateOf<List<com.example.chattingapp.data.Message>>(listOf())
+    val chatMessages = mutableStateOf<List<Message>>(listOf())
 
     init {
         val currentUser = auth.currentUser
@@ -178,7 +178,7 @@ class LCViewModel @Inject constructor(
                     }
                     if (value != null) {
                         chatMessages.value = value.documents.mapNotNull {
-                            it.toObject<com.example.chattingapp.data.Message>()
+                            it.toObject<Message>()
                         }.sortedBy { it.timeStamp }
                         inProgressChatMessage.value = false
                     }
@@ -395,7 +395,7 @@ class LCViewModel @Inject constructor(
 
     fun onSendReply(chatID: String, message: String) {
         val time = Calendar.getInstance().time.toString()
-        val msg = com.example.chattingapp.data.Message(userData.value?.userID, message, time)
+        val msg = Message(userData.value?.userID, message, time)
         db.collection(CHATS).document(chatID).collection(MESSAGE).document().set(msg)
     }
 
