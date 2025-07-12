@@ -57,29 +57,53 @@ class LCViewModel @Inject constructor(
         Log.d("LCViewModel", "Starting signup process for email: $email, number: $number")
         inProcess.value = true
         
-        db.collection(USER_NODE).whereEqualTo("number", number).get()
-            .addOnSuccessListener {
-                if (it.isEmpty) {
-                    Log.d("LCViewModel", "Number not in use, creating Firebase auth account")
-                    auth.createUserWithEmailAndPassword(email, password)
-                        .addOnCompleteListener { authResult ->
-                            if (authResult.isSuccessful) {
-                                Log.d("LCViewModel", "Firebase auth successful, UID: ${auth.currentUser?.uid}")
+        // Create Firebase auth account first, then check for duplicate numbers
+        Log.d("LCViewModel", "Creating Firebase auth account")
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener { authResult ->
+                if (authResult.isSuccessful) {
+                    Log.d("LCViewModel", "Firebase auth successful, UID: ${auth.currentUser?.uid}")
+                    
+                    // Now that user is authenticated, check for duplicate phone numbers
+                    Log.d("LCViewModel", "Checking if number $number already exists in Firestore")
+                    db.collection(USER_NODE).whereEqualTo("number", number).get()
+                        .addOnSuccessListener { querySnapshot ->
+                            Log.d("LCViewModel", "Successfully queried Firestore. Found ${querySnapshot.size()} documents")
+                            if (querySnapshot.isEmpty) {
+                                Log.d("LCViewModel", "Number not in use, creating user profile")
                                 signIn.value = true
                                 createOrUpdateProfile(name, number)
                             } else {
-                                Log.e("LCViewModel", "Firebase auth failed", authResult.exception)
-                                handleException(authResult.exception, customMessage = "Sign UP failed")
+                                Log.w("LCViewModel", "User with number $number already exists, deleting auth account")
+                                // Delete the created auth account since number is already taken
+                                auth.currentUser?.delete()?.addOnCompleteListener {
+                                    auth.signOut()
+                                    inProcess.value = false
+                                    handleException(customMessage = "User with this phone number already exists")
+                                }
+                            }
+                        }
+                        .addOnFailureListener { exception ->
+                            Log.e("LCViewModel", "Error checking existing number: ${exception.message}", exception)
+                            // Delete the created auth account due to error
+                            auth.currentUser?.delete()?.addOnCompleteListener {
+                                auth.signOut()
+                                inProcess.value = false
+                                val errorMessage = when {
+                                    exception.message?.contains("PERMISSION_DENIED") == true -> 
+                                        "Database permission error. Please try again."
+                                    exception.message?.contains("UNAVAILABLE") == true -> 
+                                        "Network error. Please check your internet connection."
+                                    else -> "Failed to check existing users: ${exception.message}"
+                                }
+                                handleException(exception, errorMessage)
                             }
                         }
                 } else {
-                    Log.w("LCViewModel", "User with number $number already exists")
-                    handleException(customMessage = "User with Number already exist")
+                    Log.e("LCViewModel", "Firebase auth failed", authResult.exception)
+                    inProcess.value = false
+                    handleException(authResult.exception, customMessage = "Sign UP failed")
                 }
-            }
-            .addOnFailureListener { exception ->
-                Log.e("LCViewModel", "Error checking existing number", exception)
-                handleException(exception, "Failed to check existing users")
             }
     }
 
@@ -324,13 +348,16 @@ class LCViewModel @Inject constructor(
             }
             
             // Check if user exists first
+            Log.d("LCViewModel", "Searching for user with number: $number")
             db.collection(USER_NODE).whereEqualTo("number", number).get()
                 .addOnSuccessListener { userQuery ->
+                    Log.d("LCViewModel", "User search completed. Found ${userQuery.size()} users")
                     if (userQuery.isEmpty) {
                         handleException(customMessage = "Number not found")
                     } else {
                         val chatPartner = userQuery.toObjects<UserData>()[0]
                         val chatPartnerId = chatPartner.userID
+                        Log.d("LCViewModel", "Found chat partner: ${chatPartner.name} (ID: $chatPartnerId)")
                         
                         // Check if chat already exists using users array
                         db.collection(CHATS)
@@ -383,12 +410,21 @@ class LCViewModel @Inject constructor(
                                 }
                             }
                             .addOnFailureListener { exception ->
+                                Log.e("LCViewModel", "Error checking existing chats: ${exception.message}", exception)
                                 handleException(exception, "Failed to check existing chats")
                             }
                     }
                 }
                 .addOnFailureListener { exception ->
-                    handleException(exception, "Failed to find user")
+                    Log.e("LCViewModel", "Error finding user by number: ${exception.message}", exception)
+                    val errorMessage = when {
+                        exception.message?.contains("PERMISSION_DENIED") == true -> 
+                            "Permission denied. Cannot search for users."
+                        exception.message?.contains("UNAVAILABLE") == true -> 
+                            "Network error. Please check your connection."
+                        else -> "Failed to find user: ${exception.message}"
+                    }
+                    handleException(exception, errorMessage)
                 }
         }
     }
