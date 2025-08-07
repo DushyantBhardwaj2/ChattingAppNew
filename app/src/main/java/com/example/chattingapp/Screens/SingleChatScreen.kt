@@ -71,7 +71,17 @@ fun SingleChatScreen(navController: NavController, vm: LCViewModel, chatId: Stri
 
     val myUser = vm.userData.value
     var chatMessage = vm.chatMessages
-    var currentChat = vm.chats.value.first { it.chatId == chatId }
+    val currentChat = vm.chats.value.firstOrNull { it.chatId == chatId }
+    
+    // Handle case where chat doesn't exist
+    if (currentChat == null) {
+        LaunchedEffect(Unit) {
+            vm.handleException(customMessage = "Chat not found")
+            navController.popBackStack()
+        }
+        return
+    }
+    
     val chatUser = if (myUser?.userID == currentChat.user1.userID) currentChat.user2 else currentChat.user1
 
     LaunchedEffect(key1 = Unit) {

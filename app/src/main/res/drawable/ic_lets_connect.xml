@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Background circle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M0,0h108v108h-108z"/>
+    
+    <!-- Main icon content scaled and centered -->
+    <group android:scaleX="0.8" android:scaleY="0.8" android:pivotX="54" android:pivotY="54">
+        <!-- Face outline -->
+        <path
+            android:fillColor="#000000"
+            android:pathData="M54,20C40,20 28,32 28,46C28,50 29,54 30,57L32,62C34,68 38,72 42,75C46,78 50,80 54,80C58,80 62,78 66,75C70,72 74,68 76,62L78,57C79,54 80,50 80,46C80,32 68,20 54,20Z"/>
+        
+        <!-- Hair -->
+        <path
+            android:fillColor="#000000"
+            android:pathData="M30,30C30,25 35,20 42,18C48,16 60,16 66,18C73,20 78,25 78,30L78,45C78,48 77,50 76,52L74,48C72,44 70,42 68,40C66,38 64,36 62,35C60,34 58,33 56,32L54,32L52,32C50,33 48,34 46,35C44,36 42,38 40,40C38,42 36,44 34,48L32,52C31,50 30,48 30,45L30,30Z"/>
+        
+        <!-- Headband -->
+        <path
+            android:fillColor="#000000"
+            android:pathData="M32,32L76,32C76,28 74,26 72,25L36,25C34,26 32,28 32,32Z"/>
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M70,30L74,30L74,28L70,28Z"/>
+        
+        <!-- Sunglasses -->
+        <path
+            android:fillColor="#000000"
+            android:pathData="M38,42L50,42L50,48L38,48Z"/>
+        <path
+            android:fillColor="#000000"
+            android:pathData="M58,42L70,42L70,48L58,48Z"/>
+        <path
+            android:fillColor="#000000"
+            android:pathData="M50,44L58,44L58,46L50,46Z"/>
+        
+        <!-- Diamond pattern on glasses -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M42,44L44,42L46,44L44,46Z"/>
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M62,44L64,42L66,44L64,46Z"/>
+        
+        <!-- Nose -->
+        <path
+            android:fillColor="#000000"
+            android:pathData="M53,50L55,50L55,52L53,52Z"/>
+        
+        <!-- Beard -->
+        <path
+            android:fillColor="#000000"
+            android:pathData="M42,56C42,58 44,62 46,64C48,66 50,68 52,69C53,69.5 54,70 54,70C54,70 55,69.5 56,69C58,68 60,66 62,64C64,62 66,58 66,56L66,54L64,54C62,56 60,58 58,59C56,60 54,61 54,61C54,61 52,60 50,59C48,58 46,56 44,54L42,54L42,56Z"/>
+        
+        <!-- Hair strands -->
+        <path
+            android:fillColor="#000000"
+            android:pathData="M34,60L36,65L38,60"/>
+        <path
+            android:fillColor="#000000"
+            android:pathData="M36,62L38,67L40,62"/>
+        <path
+            android:fillColor="#000000"
+            android:pathData="M68,62L70,67L72,62"/>
+        <path
+            android:fillColor="#000000"
+            android:pathData="M70,60L72,65L74,60"/>
+    </group>
+</vector>

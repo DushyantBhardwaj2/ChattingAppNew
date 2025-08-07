@@ -12,6 +12,7 @@ import com.example.chattingapp.data.Message
 import com.example.chattingapp.data.USER_NODE
 import com.example.chattingapp.data.UserData
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.Filter
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -72,7 +73,7 @@ class LCViewModel @Inject constructor(
                             if (querySnapshot.isEmpty) {
                                 Log.d("LCViewModel", "Number not in use, creating user profile")
                                 signIn.value = true
-                                createOrUpdateProfile(name, number)
+                                createOrUpdateProfile(name, number, email = email)
                             } else {
                                 Log.w("LCViewModel", "User with number $number already exists, deleting auth account")
                                 // Delete the created auth account since number is already taken
@@ -131,8 +132,203 @@ class LCViewModel @Inject constructor(
         }
     }
 
+    fun signInWithGoogle(account: com.google.android.gms.auth.api.signin.GoogleSignInAccount) {
+        Log.d("LCViewModel", "Starting Google Sign-In with account: ${account.email}")
+        inProcess.value = true
+        
+        val email = account.email ?: ""
+        
+        if (email.isNotEmpty()) {
+            // Check if user already exists by email
+            db.collection(USER_NODE).whereEqualTo("email", email).get()
+                .addOnSuccessListener { querySnapshot ->
+                    if (!querySnapshot.isEmpty) {
+                        // User exists, sign them in
+                        val userDoc = querySnapshot.documents.first()
+                        val userData = userDoc.toObject(UserData::class.java)
+                        Log.d("LCViewModel", "Existing Google user found: ${userData?.name}")
+                        this.userData.value = userData
+                        signIn.value = true
+                        inProcess.value = false
+                    } else {
+                        // User doesn't exist, they need to complete profile
+                        Log.d("LCViewModel", "New Google user, profile completion required")
+                        inProcess.value = false
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    Log.e("LCViewModel", "Error checking existing Google user", exception)
+                    inProcess.value = false
+                    handleException(exception, "Failed to check existing user")
+                }
+        } else {
+            inProcess.value = false
+            handleException(Exception("Google account email not available"), "Google Sign-In failed: No email")
+        }
+    }
+    
+    fun handleGoogleSignIn(
+        account: com.google.android.gms.auth.api.signin.GoogleSignInAccount,
+        onSuccess: (UserData) -> Unit,
+        onNewUser: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        Log.d("LCViewModel", "Starting Google Sign-In authentication for: ${account.email}")
+        
+        inProcess.value = true
+        val email = account.email ?: ""
+        val idToken = account.idToken
+        
+        if (idToken == null) {
+            Log.e("LCViewModel", "ID Token is null. Cannot authenticate with Firebase.")
+            inProcess.value = false
+            onError("Failed to get Google ID token. Please try again.")
+            return
+        }
+        
+        // Step 1: Authenticate with Firebase Auth using Google credential
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        auth.signInWithCredential(credential)
+            .addOnCompleteListener { authTask ->
+                if (authTask.isSuccessful) {
+                    Log.d("LCViewModel", "Firebase Auth successful for: $email")
+                    
+                    // Step 2: Now that user is authenticated, check if they exist in Firestore
+                    checkExistingGoogleUser(
+                        email = email,
+                        onExists = { userData ->
+                            Log.d("LCViewModel", "Existing user found: ${userData.name}")
+                            this.userData.value = userData
+                            inProcess.value = false
+                            onSuccess(userData)
+                        },
+                        onNotExists = {
+                            Log.d("LCViewModel", "New user detected: $email")
+                            inProcess.value = false
+                            onNewUser()
+                        },
+                        onError = { error ->
+                            Log.e("LCViewModel", "Error checking user existence: $error")
+                            inProcess.value = false
+                            onError(error)
+                        }
+                    )
+                } else {
+                    Log.e("LCViewModel", "Firebase Auth failed: ${authTask.exception?.message}")
+                    inProcess.value = false
+                    onError("Firebase authentication failed: ${authTask.exception?.message}")
+                }
+            }
+    }
+
+    fun checkExistingGoogleUser(
+        email: String,
+        onExists: (UserData) -> Unit,
+        onNotExists: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        Log.d("LCViewModel", "Checking existing Google user: $email")
+        
+        db.collection(USER_NODE).whereEqualTo("email", email).get()
+            .addOnSuccessListener { querySnapshot ->
+                if (!querySnapshot.isEmpty) {
+                    // User exists
+                    val userDoc = querySnapshot.documents.first()
+                    val userData = userDoc.toObject(UserData::class.java)
+                    if (userData != null) {
+                        Log.d("LCViewModel", "Existing Google user found: ${userData.name}")
+                        onExists(userData)
+                    } else {
+                        onNotExists()
+                    }
+                } else {
+                    // User doesn't exist
+                    Log.d("LCViewModel", "Google user not found, needs profile completion")
+                    onNotExists()
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.e("LCViewModel", "Error checking existing Google user", exception)
+                val errorMessage = when {
+                    exception.message?.contains("PERMISSION_DENIED") == true -> 
+                        "Database permission error. Please check Firestore rules."
+                    exception.message?.contains("UNAVAILABLE") == true -> 
+                        "Network error. Please check your internet connection."
+                    else -> "Failed to check existing user: ${exception.localizedMessage}"
+                }
+                onError(errorMessage)
+            }
+    }
+
+    fun completeGoogleProfile(
+        googleAccount: com.google.android.gms.auth.api.signin.GoogleSignInAccount,
+        name: String,
+        number: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        Log.d("LCViewModel", "Completing Google profile for: $name with number: $number")
+        inProcess.value = true
+        
+        // First check if the phone number is already taken
+        db.collection(USER_NODE).whereEqualTo("number", number).get()
+            .addOnSuccessListener { querySnapshot ->
+                if (!querySnapshot.isEmpty) {
+                    // Phone number already exists
+                    Log.w("LCViewModel", "Phone number $number already exists")
+                    inProcess.value = false
+                    onError("This phone number is already registered. Please use a different number.")
+                } else {
+                    // Phone number is available, create the profile
+                    val email = googleAccount.email ?: ""
+                    val userID = "google_${email.replace("@", "_").replace(".", "_")}_${System.currentTimeMillis()}"
+                    
+                    val userData = UserData(
+                        userID = userID,
+                        name = name,
+                        number = number,
+                        email = email,
+                        profileIcon = com.example.chattingapp.data.ProfileIcons.getIconByUserId(userID)
+                    )
+                    
+                    db.collection(USER_NODE).document(userID).set(userData)
+                        .addOnSuccessListener {
+                            Log.d("LCViewModel", "Google user profile completed successfully for: $name")
+                            this.userData.value = userData
+                            signIn.value = true
+                            inProcess.value = false
+                            onSuccess()
+                        }
+                        .addOnFailureListener { exception ->
+                            Log.e("LCViewModel", "Error completing Google user profile", exception)
+                            inProcess.value = false
+                            val errorMessage = when {
+                                exception.message?.contains("PERMISSION_DENIED") == true -> 
+                                    "Database permission error. Please check Firestore rules."
+                                exception.message?.contains("UNAVAILABLE") == true -> 
+                                    "Network error. Please check your internet connection."
+                                else -> "Failed to create profile: ${exception.localizedMessage}"
+                            }
+                            onError(errorMessage)
+                        }
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.e("LCViewModel", "Error checking phone number availability", exception)
+                inProcess.value = false
+                val errorMessage = when {
+                    exception.message?.contains("PERMISSION_DENIED") == true -> 
+                        "Database permission error. Please check Firestore rules."
+                    exception.message?.contains("UNAVAILABLE") == true -> 
+                        "Network error. Please check your internet connection."
+                    else -> "Failed to validate phone number: ${exception.localizedMessage}"
+                }
+                onError(errorMessage)
+            }
+    }
+
     fun handleException(exception: Exception? = null, customMessage: String = "") {
-        Log.e("Live Chat App", "live Chat Exception: ", exception)
+        Log.e("Lets Connect", "Exception: ", exception)
         exception?.printStackTrace()
         val errorMSG = exception?.localizedMessage ?: ""
         val message = if (customMessage.isNullOrBlank()) errorMSG else customMessage
@@ -144,6 +340,7 @@ class LCViewModel @Inject constructor(
     fun createOrUpdateProfile(
         name: String? = null,
         number: String? = null,
+        email: String? = null,
         profileIcon: Int? = null
     ) {
         val uid = auth.currentUser?.uid
@@ -151,6 +348,7 @@ class LCViewModel @Inject constructor(
             userID = uid ?: "",
             name = name ?: userData.value?.name,
             number = number ?: userData.value?.number,
+            email = email ?: userData.value?.email,
             profileIcon = profileIcon ?: userData.value?.profileIcon ?: com.example.chattingapp.data.ProfileIcons.getDefaultIcon()
         )
         uid?.let {
@@ -161,6 +359,7 @@ class LCViewModel @Inject constructor(
                         val updatedData = mutableMapOf<String, Any>()
                         name?.let { updatedData["name"] = it }
                         number?.let { updatedData["number"] = it }
+                        email?.let { updatedData["email"] = it }
                         profileIcon?.let { updatedData["profileIcon"] = it }
 
                         db.collection(USER_NODE).document(uid).update(updatedData)
@@ -377,97 +576,124 @@ class LCViewModel @Inject constructor(
         eventMutableState.value = Events("logout")
     }
 
-    fun onAddChat(number: String) {
-        if (number.isEmpty() or !number.isDigitsOnly()) {
-            handleException(customMessage = "Number must be contain digits only")
-        } else {
-            // First check if a chat already exists using the users array
-            val currentUserId = userData.value?.userID
-            if (currentUserId == null) {
-                handleException(customMessage = "User not logged in")
-                return
-            }
-            
-            // Check if user exists first
-            Log.d("LCViewModel", "Searching for user with number: $number")
-            db.collection(USER_NODE).whereEqualTo("number", number).get()
-                .addOnSuccessListener { userQuery ->
-                    Log.d("LCViewModel", "User search completed. Found ${userQuery.size()} users")
-                    if (userQuery.isEmpty) {
-                        handleException(customMessage = "Number not found")
-                    } else {
-                        val chatPartner = userQuery.toObjects<UserData>()[0]
-                        val chatPartnerId = chatPartner.userID
-                        Log.d("LCViewModel", "Found chat partner: ${chatPartner.name} (ID: $chatPartnerId)")
-                        
-                        // Check if chat already exists using users array
-                        db.collection(CHATS)
-                            .whereArrayContains("users", currentUserId)
-                            .get()
-                            .addOnSuccessListener { existingChats ->
-                                var chatExists = false
-                                
-                                // Check if any existing chat contains both users
-                                for (doc in existingChats.documents) {
-                                    val users = doc.get("users") as? List<String> ?: listOf()
-                                    if (users.contains(chatPartnerId)) {
-                                        chatExists = true
-                                        break
-                                    }
-                                }
-                                
-                                if (chatExists) {
-                                    handleException(customMessage = "Chat already exists")
-                                } else {
-                                    // Create new chat
-                                    val id = db.collection(CHATS).document().id
-                                    val currentTime = System.currentTimeMillis()
-                                    
-                                    val chatForFirestore = mapOf(
-                                        "chatId" to id,
-                                        "users" to listOf(currentUserId, chatPartnerId),
-                                        "user1" to mapOf(
-                                            "userID" to userData.value?.userID,
-                                            "name" to userData.value?.name,
-                                            "number" to userData.value?.number,
-                                            "profileIcon" to (userData.value?.profileIcon ?: 0)
-                                        ),
-                                        "user2" to mapOf(
-                                            "userID" to chatPartner.userID,
-                                            "name" to chatPartner.name,
-                                            "number" to chatPartner.number,
-                                            "profileIcon" to chatPartner.profileIcon
-                                        ),
-                                        "createdAt" to currentTime
-                                    )
-                                    
-                                    db.collection(CHATS).document(id).set(chatForFirestore)
-                                        .addOnSuccessListener {
-                                            Log.d("AddChat", "Chat created successfully with ID: $id")
-                                        }
-                                        .addOnFailureListener { exception ->
-                                            handleException(exception, "Failed to create chat")
-                                        }
-                                }
-                            }
-                            .addOnFailureListener { exception ->
-                                Log.e("LCViewModel", "Error checking existing chats: ${exception.message}", exception)
-                                handleException(exception, "Failed to check existing chats")
-                            }
-                    }
-                }
-                .addOnFailureListener { exception ->
-                    Log.e("LCViewModel", "Error finding user by number: ${exception.message}", exception)
-                    val errorMessage = when {
-                        exception.message?.contains("PERMISSION_DENIED") == true -> 
-                            "Permission denied. Cannot search for users."
-                        exception.message?.contains("UNAVAILABLE") == true -> 
-                            "Network error. Please check your connection."
-                        else -> "Failed to find user: ${exception.message}"
-                    }
-                    handleException(exception, errorMessage)
-                }
+    fun onAddChat(identifier: String) {
+        if (identifier.isEmpty()) {
+            handleException(customMessage = "Please enter phone number or email")
+            return
         }
+        
+        val currentUserId = userData.value?.userID
+        if (currentUserId == null) {
+            handleException(customMessage = "User not logged in")
+            return
+        }
+        
+        // Prevent adding self as chat partner
+        val currentUserNumber = userData.value?.number
+        val currentUserEmail = userData.value?.email
+        if (identifier == currentUserNumber || identifier == currentUserEmail) {
+            handleException(customMessage = "You cannot add yourself as a chat partner")
+            return
+        }
+        
+        // Determine if it's a phone number or email
+        val isEmail = identifier.contains("@")
+        val searchField = if (isEmail) "email" else "number"
+        
+        // Validate input format
+        if (!isEmail && !identifier.isDigitsOnly()) {
+            handleException(customMessage = "Phone number must contain digits only")
+            return
+        }
+        
+        Log.d("LCViewModel", "Searching for user with $searchField: $identifier")
+        
+        // Search by either phone number or email
+        val query = if (isEmail) {
+            // For email search, look in both the identifier field and actual email field
+            db.collection(USER_NODE).whereEqualTo("email", identifier)
+        } else {
+            db.collection(USER_NODE).whereEqualTo("number", identifier)
+        }
+        
+        query.get()
+            .addOnSuccessListener { userQuery ->
+                Log.d("LCViewModel", "User search completed. Found ${userQuery.size()} users")
+                if (userQuery.isEmpty) {
+                    val searchType = if (isEmail) "email" else "phone number"
+                    handleException(customMessage = "$searchType not found. User might not be registered yet.")
+                } else {
+                    val chatPartner = userQuery.toObjects<UserData>()[0]
+                    val chatPartnerId = chatPartner.userID
+                    Log.d("LCViewModel", "Found chat partner: ${chatPartner.name} (ID: $chatPartnerId)")
+                    
+                    // Check if chat already exists using users array
+                    db.collection(CHATS)
+                        .whereArrayContains("users", currentUserId)
+                        .get()
+                        .addOnSuccessListener { existingChats ->
+                            var chatExists = false
+                            
+                            // Check if any existing chat contains both users
+                            for (doc in existingChats.documents) {
+                                val users = doc.get("users") as? List<String> ?: listOf()
+                                if (users.contains(chatPartnerId)) {
+                                    chatExists = true
+                                    break
+                                }
+                            }
+                            
+                            if (chatExists) {
+                                handleException(customMessage = "Chat already exists")
+                            } else {
+                                // Create new chat
+                                val id = db.collection(CHATS).document().id
+                                val currentTime = System.currentTimeMillis()
+                                
+                                val chatForFirestore = mapOf(
+                                    "chatId" to id,
+                                    "users" to listOf(currentUserId, chatPartnerId),
+                                    "user1" to mapOf(
+                                        "userID" to userData.value?.userID,
+                                        "name" to userData.value?.name,
+                                        "number" to userData.value?.number,
+                                        "profileIcon" to (userData.value?.profileIcon ?: 0)
+                                    ),
+                                    "user2" to mapOf(
+                                        "userID" to chatPartner.userID,
+                                        "name" to chatPartner.name,
+                                        "number" to chatPartner.number,
+                                        "profileIcon" to chatPartner.profileIcon
+                                    ),
+                                    "createdAt" to currentTime
+                                )
+                                
+                                db.collection(CHATS).document(id).set(chatForFirestore)
+                                    .addOnSuccessListener {
+                                        Log.d("AddChat", "Chat created successfully with ID: $id")
+                                    }
+                                    .addOnFailureListener { exception ->
+                                        handleException(exception, "Failed to create chat")
+                                    }
+                            }
+                        }
+                        .addOnFailureListener { exception ->
+                            Log.e("LCViewModel", "Error checking existing chats: ${exception.message}", exception)
+                            handleException(exception, "Failed to check existing chats")
+                        }
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.e("LCViewModel", "Error finding user: ${exception.message}", exception)
+                val errorMessage = when {
+                    exception.message?.contains("PERMISSION_DENIED") == true -> 
+                        "Permission denied. Cannot search for users."
+                    exception.message?.contains("UNAVAILABLE") == true -> 
+                        "Network error. Please check your connection."
+                    else -> "Failed to find user: ${exception.message}"
+                }
+                handleException(exception, errorMessage)
+            }
     }
 
     fun onSendReply(chatID: String, message: String) {
@@ -476,4 +702,20 @@ class LCViewModel @Inject constructor(
         db.collection(CHATS).document(chatID).collection(MESSAGE).document().set(msg)
     }
 
+    fun savePhoneAndPassword(phone: String, password: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        val user = auth.currentUser
+        if (user == null) {
+            onError("No authenticated user.")
+            return
+        }
+        val userMap = mapOf(
+            "phone" to phone,
+            "password" to password
+        )
+        db.collection(USER_NODE)
+            .document(user.uid)
+            .set(userMap, com.google.firebase.firestore.SetOptions.merge())
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e -> onError(e.message ?: "Unknown error") }
+    }
 }

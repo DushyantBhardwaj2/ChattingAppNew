@@ -1,259 +1,144 @@
-# 💬 Modern Chat Application
+# Lets Connect
 
-[![Android CI](https://github.com/DushyantBhardwaj2/ChattingAppNew/actions/workflows/android.yml/badge.svg)](https://github.com/DushyantBhardwaj2/ChattingAppNew/actions/workflows/android.yml)
-[![API](https://img.shields.io/badge/API-26%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=26)
-[![Kotlin](https://img.shields.io/badge/kotlin-2.1.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub release](https://img.shields.io/github/v/release/DushyantBhardwaj2/ChattingAppNew)](https://github.com/DushyantBhardwaj2/ChattingAppNew/releases)
+A real-time chat application built with Jetpack Compose and Firebase.
 
-A feature-rich, real-time chat application built with **Jetpack Compose** and **Firebase**, showcasing modern Android development practices and clean architecture.
+## Try the App
 
-## 🚀 **Live Demo**
-- **APK Download**: [Release v1.0](https://github.com/DushyantBhardwaj2/ChattingAppNew/releases) *(Available for testing)*
-- **Screenshots**: See gallery below 📸
+Download the APK from [Releases](https://github.com/DushyantBhardwaj2/ChattingAppNew/releases) and test with these demo accounts:
 
----
+**Demo User 1:**
+- Email: `demoUser1@gmail.com`
+- Password: `12345678`
 
-## 🎯 **Key Features**
+**Demo User 2:**
+- Email: `demoUser2@gmail.com` 
+- Password: `12345678`
 
-### 🔐 **Authentication & Security**
-- Firebase Authentication with email/password
-- Secure user registration with phone number validation
-- Automatic duplicate account prevention
+You can create chats between these demo users to test the real-time messaging.
 
-### 💬 **Real-time Messaging**
-- Instant message delivery using Firestore real-time listeners
+## Features
+
+**Authentication**
+- Email/Password login and registration
+- Google Sign-In integration
+- Phone number validation to prevent duplicate accounts
+- Profile setup for new users
+
+**Messaging**
+- Real-time message delivery with Firestore
+- Messages appear instantly across devices
 - Auto-scroll to latest messages
-- Empty message validation
 - Message timestamps
 
-### 🎨 **Modern UI/UX**
-- **Dark/Light Theme Support** with automatic system detection
-- Material Design 3 components
+**User Interface**
+- Built with Material Design 3 and Jetpack Compose
+- 15+ profile icon options
+- Responsive design for different screen sizes
 - Smooth animations and transitions
-- Responsive layout for all screen sizes
 
-### 👤 **Profile Management**
-- Customizable profile icons (15+ options)
-- Real-time profile synchronization across chats
-- Profile picture updates reflected instantly
+**User Experience**
+- Customizable user profiles
+- Clean navigation between screens
+- Loading indicators
+- Proper error handling and messages
 
-### 🧭 **Navigation**
-- Proper back stack management
-- Bottom navigation with intuitive flow
-- Clean navigation between auth and main screens
+## Technical Details
+**Architecture**
+- MVVM pattern for clean separation
+- Repository pattern for data layer
+- Hilt for dependency injection
 
----
+**Built With**
+- Kotlin (100% Kotlin codebase)
+- Jetpack Compose for UI
+- Firebase Auth for authentication
+- Firestore for real-time database
+- Material Design 3 components
+- Navigation Component
 
-## 🛠️ **Technical Architecture**
+## Installation
 
-### **Architecture Pattern**
-- **MVVM (Model-View-ViewModel)** with Clean Architecture principles
-- **Repository Pattern** for data management
-- **Unidirectional Data Flow**
+**Requirements**
+- Android Studio (latest version recommended)
+- Android SDK 26+ (Android 8.0 or higher)
+- Google Services configuration
 
-### **Tech Stack**
-```kotlin
-// UI Framework
-Jetpack Compose 2024.12.01
-Material Design 3
+**Setup**
 
-// Dependency Injection
-Hilt 2.55
+1. Clone the repository
+   ```bash
+   git clone https://github.com/DushyantBhardwaj2/ChattingAppNew.git
+   cd ChattingAppNew
+   ```
 
-// Backend Services
-Firebase Auth 23.1.0
-Cloud Firestore 25.1.1
-Firebase Analytics 22.0.0
+2. Firebase Setup
+   - Create a Firebase project at [Firebase Console](https://console.firebase.google.com)
+   - Add Android app with package name: `com.example.chattingapp`
+   - Download `google-services.json` and place it in the `app/` directory
+   - Enable Authentication (Email/Password + Google Sign-In)
+   - Create a Firestore database with these rules:
 
-// Navigation
-Navigation Compose 2.8.5
+   ```javascript
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /users/{userId} {
+         allow read, write: if request.auth != null && request.auth.uid == userId;
+       }
+       match /chats/{chatId} {
+         allow read, write: if request.auth != null && 
+           request.auth.uid in resource.data.user;
+       }
+       match /messages/{messageId} {
+         allow read, write: if request.auth != null;
+       }
+     }
+   }
+   ```
 
-// Build System
-Kotlin 2.1.0
-Gradle 8.9
-```
+3. Google Sign-In Setup
+   - Go to Authentication > Sign-in method in Firebase Console
+   - Enable Google Sign-in
+   - Add your SHA-1 certificate fingerprint
+   - Note the Web client ID
 
-### **Key Libraries**
-- **State Management**: Compose State & ViewModel
-- **Async Operations**: Kotlin Coroutines
-- **Image Loading**: Coil 3.0
-- **Logging**: Android Log with structured debugging
+4. Build and run
+   ```bash
+   ./gradlew assembleDebug
+   ./gradlew installDebug
+   ```
 
----
-
-## 📱 **Screenshots**
-
-| Authentication | Chat List | Dark Mode Chat | Profile Settings |
-|----------------|-----------|----------------|------------------|
-| ![Auth](screenshots/auth.png) | ![Chat List](screenshots/chat_list.png) | ![Dark Chat](screenshots/dark_chat.png) | ![Profile](screenshots/profile.png) |
-
-*Screenshots showcase both light and dark themes*
-
----
-
-## 🏗️ **Project Structure**
+## Project Structure
 
 ```
 app/src/main/java/com/example/chattingapp/
-├── 📁 Screens/              # UI Composables
-│   ├── 🔐 LoginScreen.kt
-│   ├── 🔐 SignUpScreen.kt
-│   ├── 💬 ChatListScreen.kt
-│   ├── 💬 SingleChatScreen.kt
-│   ├── 👤 Profile.kt
-│   └── 🧭 BottomNavigationMenu.kt
-├── 📁 data/                 # Data Models & Constants
-│   ├── 👤 UserData.kt
-│   ├── 💬 ChatData.kt
-│   ├── 💬 Message.kt
-│   └── 🎨 ProfileIcons.kt
-├── 📁 ui/theme/             # Theme System
-│   ├── 🎨 Color.kt          # Light/Dark colors
-│   ├── 🎨 Theme.kt          # Material 3 theme
-│   └── 🎨 ChatTheme.kt      # Chat-specific theming
-├── 🧠 LCViewModel.kt        # Business Logic
-├── 🔧 HiltModule.kt         # Dependency Injection
-├── 🛠️ Util.kt              # Utility Functions
-└── 📱 MainActivity.kt       # App Entry Point
+├── Screens/           # UI screens
+│   ├── LoginScreen.kt
+│   ├── SignUpScreen.kt
+│   ├── ChatListScreen.kt
+│   └── SingleChatScreen.kt
+├── data/              # Data models
+│   ├── UserData.kt
+│   ├── ChatData.kt
+│   └── MessageData.kt
+├── LCViewModel.kt     # Main ViewModel
+├── GoogleSignInHelper.kt
+├── MainActivity.kt
+└── Utils.kt
 ```
 
----
+## How to Use
 
-## ⚡ **Performance Optimizations**
+1. Create an account with email, password, name, and phone number
+2. Login with your credentials or use Google Sign-In
+3. Complete your profile and choose an icon
+4. Search for other users by phone number to start chatting
+5. Messages sync in real-time across devices
 
-### **Real-time Efficiency**
-- **Smart Listeners**: Automatic cleanup to prevent memory leaks
-- **Selective Updates**: Only refresh changed user profiles
-- **Optimized Queries**: Efficient Firestore queries with proper indexing
+## Contributing
 
-### **UI Performance**
-- **Lazy Loading**: Chat lists with efficient scrolling
-- **State Management**: Minimal recompositions
-- **Theme Caching**: Fast theme switching
+Feel free to fork this project and submit pull requests. For major changes, please open an issue first.
 
----
+## Developer
 
-## 🚀 **Getting Started**
-
-### **Prerequisites**
-- Android Studio Hedgehog | 2023.1.1+
-- JDK 21
-- Android SDK 35
-- Firebase project setup
-
-### **Installation**
-```bash
-# 1. Clone the repository
-git clone https://github.com/DushyantBhardwaj2/ChattingAppNew.git
-
-# 2. Open in Android Studio
-cd ChattingAppNew
-
-# 3. Add your google-services.json
-# Place your Firebase config file in app/
-
-# 4. Build and run
-./gradlew assembleDebug
-```
-
-### **Firebase Setup**
-1. Create a new Firebase project
-2. Enable Authentication (Email/Password)
-3. Enable Cloud Firestore
-4. Download `google-services.json`
-5. Place in `app/` directory
-
----
-
-## 🧪 **Testing**
-
-### **Manual Testing Checklist**
-- ✅ User registration and login
-- ✅ Real-time message sending/receiving  
-- ✅ Profile updates and synchronization
-- ✅ Theme switching (Light/Dark)
-- ✅ Navigation and back stack
-- ✅ Empty message validation
-
-### **Test Coverage Areas**
-- Authentication flows
-- Real-time data synchronization
-- UI state management
-- Theme consistency
-- Error handling
-
----
-
-## 🔮 **Future Enhancements**
-
-### **Planned Features**
-- 📷 **Image/File Sharing**: Send photos and documents
-- 🔔 **Push Notifications**: Firebase Cloud Messaging
-- 📱 **Online Status**: Real-time user presence
-- 🔍 **Message Search**: Find conversations quickly
-- 🔐 **End-to-End Encryption**: Enhanced security
-- 📊 **Message Analytics**: Read receipts and delivery status
-
-### **Technical Improvements**
-- Unit & Integration testing with JUnit5
-- CI/CD pipeline with GitHub Actions
-- Code coverage reporting
-- Performance monitoring with Firebase Performance
-
----
-
-## 🐛 **Known Issues & Solutions**
-
-| Issue | Status | Solution |
-|-------|--------|----------|
-| Large chat history loading | 🔄 Planned | Implement pagination |
-| Offline message handling | 🔄 Planned | Add local caching |
-| Network error recovery | ✅ Handled | Comprehensive error handling |
-
----
-
-## 📈 **Project Metrics**
-
-- **Lines of Code**: ~2,000 (Kotlin)
-- **Build Time**: < 30 seconds
-- **APK Size**: 12.8 MB (Release)
-- **Minimum SDK**: Android 8.0 (API 26)
-- **Target SDK**: Android 15 (API 35)
-
----
-
-## 🤝 **Contributing**
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-### **Development Guidelines**
-1. Follow [Android Kotlin Style Guide](https://developer.android.com/kotlin/style-guide)
-2. Maintain MVVM architecture pattern
-3. Add appropriate comments and documentation
-4. Test changes thoroughly
-
----
-
-## 📄 **License**
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 👨‍💻 **Developer**
-
-**Dushyant Bhardwaj**
-- 📧 Email: [your.email@example.com](mailto:your.email@example.com)
-- 💼 LinkedIn: [linkedin.com/in/dushyantbhardwaj](https://linkedin.com/in/dushyantbhardwaj)
-- 🐙 GitHub: [@DushyantBhardwaj2](https://github.com/DushyantBhardwaj2)
-
----
-
-## ⭐ **Show Your Support**
-
-Give a ⭐️ if this project helped you learn Android development!
-
----
-
-**Built with ❤️ using Modern Android Development practices**
+Built by [Dushyant Bhardwaj](https://github.com/DushyantBhardwaj2)

@@ -17,6 +17,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -157,7 +159,28 @@ fun FAB(
                 OutlinedTextField(
                     value = addChatNumber.value,
                     onValueChange = { addChatNumber.value = it },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    label = { Text("Phone number or Email") },
+                    placeholder = { Text("Enter phone number or email") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = if (addChatNumber.value.contains("@")) {
+                            KeyboardType.Email
+                        } else {
+                            KeyboardType.Phone
+                        }
+                    ),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (addChatNumber.value.contains("@")) {
+                                Icons.Default.Email
+                            } else {
+                                Icons.Default.Phone
+                            },
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 )
             }
         )
