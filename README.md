@@ -30,12 +30,6 @@ You can create chats between these demo users to test the real-time messaging.
 - Auto-scroll to latest messages
 - Message timestamps
 
-**User Interface**
-- Built with Material Design 3 and Jetpack Compose
-- 15+ profile icon options
-- Responsive design for different screen sizes
-- Smooth animations and transitions
-
 **User Experience**
 - Customizable user profiles
 - Clean navigation between screens
